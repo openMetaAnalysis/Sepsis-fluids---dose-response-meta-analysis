@@ -1,16 +1,22 @@
-Template: clinical question
+Sepsis fluids and timing - dose-response meta-analysis
 ============================================
 A living systematic review
 
-Short url: http://
+(this meta-analysis is in the exploratory state; formal lit search has not been started)
+
+Short url: http://openmetaanalysis.github.io/Sepsis-fluids_and_timing_-_dose-response_meta-analysis
 
 **Clinical summary:** 
-This meta-analysis suggests that the effectiveness of the clinical intervention *is* [moderate](https://training.cochrane.org/handbook/current/chapter-15#section-15-5-3-1). [Standarized mean differences](https://training.cochrane.org/handbook/current/chapter-15#section-15-3) betweeen intervention and control groups across outcomes range from x to y. 
+This meta-analysis suggests that the optimal dosing of fluids is:
+* Give at least 30 ml/kg by hour three
+* Avoid over 60 ml /kg within the first 24 hours. Optimal is about 40 ml/kg.
+<!--
+effectiveness of the clinical intervention *is* [moderate](https://training.cochrane.org/handbook/current/chapter-15#section-15-5-3-1). [Standarized mean differences](https://training.cochrane.org/handbook/current/chapter-15#section-15-3) betweeen intervention and control groups across outcomes range from x to y. 
 
 Heterogeneity of results as measured by I<sup>2</sup> '[might not be important](https://training.cochrane.org/handbook/current/chapter-10#section-10-10-2)' at x% for all analyses; however very wide confidence intervals reflect the small number of studies and subjects. 
 
 Meta-regression of common modulators (year of publication, study size, event rate in the control groups) has not been done due to the small number of studies.
-
+-->
 This review updates previously published meta-analysis(es).(citation[s] below)
 
 * [Reconciliation of studies and conclusions with prior meta-analyses](files/reconciliation-tables/Reconciliation%20of%20studies%20and%20conclusions.pdf)
@@ -22,40 +28,45 @@ Acknowledgement: we acknowledge the essential work by the authors of the prior [
 * [Methods](http://openmetaanalysis.github.io/methods.html) for openMetaAnalysis
 * [Evidence search](files/searching/evidence-search.md) for this review (under construction)
 
-**Results:** Details of the studies included are in the:
+**Results:** Details of the studies included are in the (all pending):
+* [Forest plots](../master/files/forest-plots)
+* [spreadsheets with source data](files/data)
+* [R code](files/code)
+<!--
 * [Reconciliation of studies and conclusions with prior meta-analyses](files/reconciliation-tables/Reconciliation%20of%20studies%20and%20conclusions.pdf) (under construction)
 * [Description of studies (PICO table)](files/study-details/table-pico.pdf) (under construction)
 * [Risk of bias assessment](files/study-details/table-bias.pdf) (under construction)
-* [Forest plots](../master/files/forest-plots) ([spreadsheets with source data](files/data))
 * [Network plots](../master/files/network) (optional)
+-->
 
 The forest plot for the primary outcomes are below. Additional [forest plots](files/forest-plots) of secondary analyses may be available. 
 ![Principle results](files/forest-plots/Outcome-Primary.png)
 
+<!--
 The meta-regression for the primary outcomes are below. Additional [meta-regressions](files/metaregression) of secondary analyses may be available. 
 ![Principle results for benefit](files/metaregression/Outcome-Primary.png "Principle results for benefit]")
 
 The GRADE Profile is below. ![GRADE Profile](files/GRADE-profiles/Summary-of-findings-table.png "GRADE Profile")
-
+-->
 References:
 ----------------------------------
 
 ### Systematic review(s)
 #### Most recent review at time of last revision of this repository
-1. Ammendolia C, Stuber KJ, Rok E, Rampersaud R, Kennedy CA, Pennick V, Steenstra IA, de Bruin LK, Furlan AD. Nonoperative treatment for lumbar spinal stenosis with neurogenic claudication. Cochrane Database Syst Rev. 2013 Aug 30;8:CD010712. doi: [10.1002/14651858.CD010712](http://dx.doi.org/10.1002/14651858.CD010712). PMID: [23996271](http://pubmed.gov/23996271).
+1. Ward MA, Kuttab HI, Badgett RG. The Effect of Early Fluid Resuscitation on Mortality in Sepsis: A Systematic Review and Meta-Analysis. Crit Care Med. 2025 Jul 10. doi: [10.1097/CCM.0000000000006769](http://dx.doi.org/10.1097/CCM.0000000000006769). Epub ahead of print. PMID: [40637496](http://pubmed.gov/40637496).
 
-### Randomized controlled trials
+### Randomized controlled trials or cohort studies
 #### New trial(s) *not* included in the most recent review above
-1. Friedly JL, Comstock BA, Turner JA, Heagerty PJ, Deyo RA, Sullivan SD, Bauer Z, Bresnahan BW, Avins AL, Nedeljkovic SS, Nerenz DR, Standaert C, Kessler L, Akuthota V, Annaswamy T, Chen A, Diehn F, Firtch W, Gerges FJ, Gilligan C,
-Goldberg H, Kennedy DJ, Mandel S, Tyburski M, Sanders W, Sibell D, Smuck M, Wasan A, Won L, Jarvik JG. A randomized trial of epidural glucocorticoid injections for spinal stenosis. N Engl J Med. 2014 Jul 3;371(1):11-21. doi: [10.1056/NEJMoa1313265](http://dx.doi.org/10.1056/NEJMoa1313265). PMID: [24988555](http://pubmed.gov/24988555).
+Pending
 
 #### Trial(s) included in the review above
-1. Fukusaki M, Kobayashi I, Hara T, Sumikawa K. Symptoms of spinal stenosis do not improve after epidural steroid injection. Clin J Pain. 1998 Jun;14(2):148-51. PMID:[9647457](http://pubmed.gov/9647457).
+Pending
 
 #### Trial(s) undergoing review
-None
+Pending
 
 #### Trial(s) excluded - selected list of important trial(s)
+Pending
 
 #### Cited by
 This repository is cited by:
