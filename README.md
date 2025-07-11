@@ -8,8 +8,8 @@ Short url: http://openmetaanalysis.github.io/Sepsis-fluids_and_timing_-_dose-res
 
 **Clinical summary:** 
 This meta-analysis suggests that the optimal dosing of fluids is:
-* Give at least 30 ml/kg by hour three
-* Avoid over 60 ml /kg within the first 24 hours. Optimal is about 40 ml/kg.
+* Give at least 30 ml/kg by hour three for the typical patient
+* Avoid over 60 ml /kg within the first 24 hours. Optimal is about 40 ml/kg for the typical patient.
 <!--
 effectiveness of the clinical intervention *is* [moderate](https://training.cochrane.org/handbook/current/chapter-15#section-15-5-3-1). [Standarized mean differences](https://training.cochrane.org/handbook/current/chapter-15#section-15-3) betweeen intervention and control groups across outcomes range from x to y. 
 
