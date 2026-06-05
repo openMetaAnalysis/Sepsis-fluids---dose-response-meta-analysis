@@ -1,17 +1,15 @@
 # This file is available at http://openmetaanalysis.github.io/Sepsis-fluids_and_timing_-_dose-response_meta-analysis
-# Author:rbadgett@kumc.edu
+# Author: rbadgett@kumc.edu
 # Permissions:
 #* Code GNU GPLv3 https://choosealicense.com/licenses/gpl-3.0/
 #* Images CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
 # Optimized for coding with R Studio document outline view
-# Last edited 2025-06-02
 
 # Background
 # See chat in "Research - sepsis", "Library Dosresmeta model error fix"
-# Summary: could not get library doseresmeta or metafor to meet needs 
-# Chat switched to custom code,
-# * search for newdat and doseXhours
- 
+# Summary: could not get library doseresmeta to meet needs 
+# Chat switched to metafor::rma.glmm
+
 #== Startup ======
 library(tcltk) # For interactions and troubleshooting, part of base package so no install needed.
 
@@ -49,51 +47,97 @@ add_tick <- function(xpos) {
 
 # ____________________-----
 # Overall weighted prediction R2 -----
-function_overall_prediction_r2 <- function() {
+function_overall_prediction_r2 <- function(
+    model = res_quad,
+    dat   = data.import,
+    weight_var = "n"
+) {
   
-  needed_vars <- c("cases", "n", "dose", "hours")
-  
-  dat_r2 <- data.import[complete.cases(data.import[, needed_vars]), , drop = FALSE]
-  
-  dat_r2 <- dat_r2[
-    is.finite(dat_r2$cases) &
-      is.finite(dat_r2$n) &
-      dat_r2$n > 0 &
-      is.finite(dat_r2$dose) &
-      is.finite(dat_r2$hours),
-    ,
-    drop = FALSE
-  ]
-  
-  obs_r2 <- dat_r2$cases / dat_r2$n
-  
-  newdat_r2 <- data.frame(
-    dose               = dat_r2$dose,
-    dose_squared       = dat_r2$dose^2,
-    hours              = dat_r2$hours,
-    doseXhours         = dat_r2$dose * dat_r2$hours,
-    dose_squaredXhours = dat_r2$dose^2 * dat_r2$hours
+  ##* 1) Keep rows with all model variables -----
+  vars_needed <- c(
+    "cases",
+    "n",
+    "dose",
+    "dose_squared",
+    "hours",
+    "doseXhours",
+    "dose_squaredXhours",
+    "study_design"
   )
   
-  pred_r2 <- as.numeric(
-    predict(
-      res_quad,
-      newmods = as.matrix(newdat_r2),
-      transf  = plogis
-    )$pred
+  dat_r2 <- data.import[complete.cases(data.import[, vars_needed]), , drop = FALSE]
+  
+  ##* 2) Preserve study-design factor coding -----
+  dat_r2$study_design <- factor(
+    dat_r2$study_design,
+    levels = levels(dat$study_design)
   )
   
-  w_r2 <- dat_r2$n
+  ##* 3) Create the same moderator matrix used by the model -----
   
-  ss_res <- sum(w_r2 * (obs_r2 - pred_r2)^2, na.rm = TRUE)
-  ss_tot <- sum(w_r2 * (obs_r2 - weighted.mean(obs_r2, w_r2, na.rm = TRUE))^2,
-                na.rm = TRUE)
+  newmods_r2 <- model.matrix(
+    ~ dose + dose_squared + hours +
+      doseXhours + dose_squaredXhours +
+      study_design,
+    data = dat_r2
+  )
   
-  if (!is.finite(ss_tot) || ss_tot <= 0) {
-    return(NA_real_)
+  newmods_r2 <- newmods_r2[, colnames(newmods_r2) != "(Intercept)", drop = FALSE]
+  
+  ##* 4) Reorder columns to match the fitted model exactly -----
+  
+  model_coef_names <- names(coef(model))
+  moderator_names  <- model_coef_names[model_coef_names != "intrcpt"]
+  
+  missing_cols <- setdiff(moderator_names, colnames(newmods_r2))
+  
+  if (length(missing_cols) > 0) {
+    stop(
+      paste0(
+        "The prediction matrix is missing moderator column(s): ",
+        paste(missing_cols, collapse = ", ")
+      )
+    )
   }
   
-  100 * (1 - ss_res / ss_tot)
+  newmods_r2 <- newmods_r2[, moderator_names, drop = FALSE]
+  
+  ##* 5) Predicted and observed mortality -----
+  
+  pred <- predict(
+    model,
+    newmods = newmods_r2,
+    transf  = plogis
+  )$pred
+  
+  obs <- dat_r2$cases / dat_r2$n
+  
+  ##* 6) Weighted R2 on the mortality-proportion scale -----
+  
+  w <- dat_r2[[weight_var]]
+  
+  keep <- is.finite(obs) & is.finite(pred) & is.finite(w) & w > 0
+  
+  obs  <- obs[keep]
+  pred <- pred[keep]
+  w    <- w[keep]
+  
+  obs_bar_w <- weighted.mean(obs, w)
+  
+  ss_res <- sum(w * (obs - pred)^2)
+  ss_tot <- sum(w * (obs - obs_bar_w)^2)
+  
+  r2 <- 1 - ss_res / ss_tot
+  
+  out <- data.frame(
+    n_rows     = length(obs),
+    ss_res     = ss_res,
+    ss_tot     = ss_tot,
+    r2         = r2,
+    r2_percent = 100 * r2
+  )
+  
+  return(out)
 }
 
 function_panel_arm_count_label <- function(hours_value) {
@@ -113,26 +157,62 @@ function_panel_arm_count_label <- function(hours_value) {
     drop = FALSE
   ]
   
-  bquote(directly~observed~arms == .(nrow(dat_arms)))
+  if ("study_design" %in% names(dat_arms)) {
+    n_randomized <- sum(dat_arms$study_design == "RCT", na.rm = TRUE)
+  } else {
+    n_randomized <- sum(tolower(as.character(dat_arms$type)) == "rct", na.rm = TRUE)
+  }
+  
+  paste0(
+    "Directly observed study arms\n",
+    "  Total: ", nrow(dat_arms), "\n",
+    "  Randomized: ", n_randomized
+  )
 }
 
 ## _________________________________-----
-function_plot_panel <- function(hours) {
+function_plot_panel <- function(hours, study_design_value = "RCT") {
   # hours <- 3 # for testing
   # data prep --------------------------------------------------------
-  dose_seq <- seq(min(data.import$dose),
-                  max(data.import$dose), length.out = 200)
+  dose_seq <- seq(
+    min(data.import$dose, na.rm = TRUE),
+    max(data.import$dose, na.rm = TRUE),
+    length.out = 200
+  )
+  
   step <- diff(dose_seq)[1]
   
-  newdat <- within(data.frame(dose = dose_seq), {
-    dose_squared      <- dose^2
-    hours        <- hours
-    doseXhours   <- dose * hours
-    dose_squaredXhours <- dose_squared * hours
-  })
-  preds <- predict(res_quad,
-                   newmods = as.matrix(newdat),
-                   transf  = plogis)
+  newdat <- data.frame(
+    dose                 = dose_seq,
+    dose_squared         = dose_seq^2,
+    hours                = hours,
+    doseXhours           = dose_seq * hours,
+    dose_squaredXhours   = (dose_seq^2) * hours,
+    study_design         = factor(
+      study_design_value,
+      levels = levels(data.import$study_design)
+    )
+  )
+  
+  newmods <- model.matrix(
+    ~ dose + dose_squared + hours +
+      doseXhours + dose_squaredXhours +
+      study_design,
+    data = newdat
+  )
+  
+  newmods <- newmods[, colnames(newmods) != "(Intercept)", drop = FALSE]
+  
+  model_coef_names <- names(coef(res_quad))
+  moderator_names  <- model_coef_names[model_coef_names != "intrcpt"]
+  
+  newmods <- newmods[, moderator_names, drop = FALSE]
+  
+  preds <- predict(
+    res_quad,
+    newmods = newmods,
+    transf  = plogis
+  )
   
   # basic curve ------------------------------------------------------
   par(las = 1, mgp = c(3, 0.8, 0))
@@ -150,7 +230,7 @@ function_plot_panel <- function(hours) {
   arms_panel_label <- function_panel_arm_count_label(hours)
   
   usr <- par("usr")
-  text(x = usr[1] + 0.20 * diff(usr[1:2]),
+  text(x = usr[1] + 0.10 * diff(usr[1:2]),
        y = usr[4] - 0.07 * diff(usr[3:4]),
        labels = arms_panel_label,
        adj = c(0, 1),
@@ -253,17 +333,26 @@ function_plot_panel <- function(hours) {
        col = ifelse(grepl("^Unsafe", text_legend), "red", "black"))
   }
 
-# __________________________________________-----
+# __________________________________-----
 # Libraries --------------
 library(crayon)
 library(metafor)
 library(openxlsx)
 
-# Data grab -----------
-### Data grab ===================================
-
-file.filter   <- matrix(c("Text","*.txt","Spreadsheets","*.csv;*.xls;*.xlsx","All","..\\data\\*.*"),byrow=TRUE,ncol=2)
-filename      <- choose.files(filters = file.filter,caption = "Select data file",index = 2, multi=FALSE)
+# __________________________________-----
+# Data grab ===================================
+file.filter <- matrix(c(
+  "Text", "*.txt",
+  "Spreadsheets", "*.csv;*.xls;*.xlsx",
+  "All", "*.*"
+), byrow = TRUE, ncol = 2)
+filename <- choose.files(
+  default = "..\\data\\*.*", 
+  filters = file.filter,
+  caption = "Select data file",
+  index = 2, 
+  multi = FALSE
+)
 #file.extension<- substr(filename, nchar(filename) - 2, nchar(filename))
 file.extension<- substr(filename,regexpr("\\.[^\\.]*$", filename)+1, nchar(filename))
 data.import <- NULL
@@ -281,6 +370,13 @@ data.import <- data.import[
   drop = FALSE
 ]
 
+data.import$study_design <- data.import$type
+data.import$study_design <- factor(
+  data.import$type,
+  levels = c("rct", "cohort"),
+  labels = c("RCT", "Cohort")
+)
+
 data.import$dose_squared <- data.import$dose^2
 
 data.import$cases[data.import$cases == 0] <- 0.5
@@ -295,14 +391,13 @@ data.import$cases[all_events] <- data.import$cases[all_events] - 0.5
 data.import$doseXhours   <- data.import$dose * data.import$hours
 data.import$dose_squaredXhours <- data.import$dose_squared * data.import$hours
 
-overall_prediction_r2 <- function_overall_prediction_r2()
-
 # Step B: Modify the formula to match those names and use metafor:
 res_quad <- rma.glmm(
   measure = "PLO",
   xi      = cases,
   ni      = n,
-  mods    = ~ dose + dose_squared + hours + doseXhours + dose_squaredXhours,
+  #mods    = ~ dose + dose_squared + hours + doseXhours + dose_squaredXhours, # Commented out 2026-06-04
+  mods    = ~ dose + dose_squared + hours + doseXhours + dose_squaredXhours + study_design,
   data    = data.import,
   slevel  = "Study",
   model   = "UM.RS",
@@ -310,9 +405,12 @@ res_quad <- rma.glmm(
   add     = 0.5,
   to      = "all"
 )
+
 summary(res_quad)
 
-# _______________________________-----
+overall_prediction_r2 <- function_overall_prediction_r2()
+
+# __________________________________-----
 # Print panels -----------------
 if(dev.cur() > 1) dev.off() 
 
@@ -386,5 +484,5 @@ mtext(temp_text, side = 1, line = 8, col = "black", cex = 1, adj = 0)
 #mtext(paste0("rbadgett@kumc.edu, ",Sys.Date()), side=1, line = 9, cex = 0.8, adj=1)
 
 #* Print -----
-function_plot_print("Figure 1vb. Optimal fluid rates over 24 hours", 800, 1500, imagetype = "png")
+function_plot_print("../Figure 1. Optimal fluid rates over 24 hours", 800, 1500, imagetype = "png")
 
